@@ -11,6 +11,8 @@ const (
 	ParamMatchesJsonPath ParamMatchingStrategy = "matchesJsonPath"
 	ParamAbsent          ParamMatchingStrategy = "absent"
 	ParamDoesNotMatch    ParamMatchingStrategy = "doesNotMatch"
+	ParamHasExactly      ParamMatchingStrategy = "hasExactly"
+	ParamIncludes        ParamMatchingStrategy = "includes"
 )
 
 // Types of url matching.
@@ -194,5 +196,71 @@ func Absent() ParamMatcher {
 		flags: map[string]bool{
 			string(ParamAbsent): true,
 		},
+	}
+}
+
+// MultiParamMatcher is structure for matching multiple parameters, used for query param and http headers
+type MultiParamMatcher struct {
+	strategy ParamMatchingStrategy
+	values   []ParamMatcher
+	flags    map[string]bool
+}
+
+// Strategy returns ParamMatchingStrategy of MultiParamMatcher
+func (m MultiParamMatcher) Strategy() ParamMatchingStrategy {
+	return m.strategy
+}
+
+// Values return values of MultiParamMatcher
+func (m MultiParamMatcher) Values() []ParamMatcher {
+	return m.values
+}
+
+// IsSingleParam checks if MultiParamMatcher only have one value
+func (m MultiParamMatcher) IsSingleParam() bool {
+	return len(m.values) == 1
+}
+
+// FirstValue returns the first value in MultiParamMatcher
+func (m MultiParamMatcher) FirstValue() string {
+	return m.values[0].Value()
+}
+
+// Length returns how many values MultiParamMatcher have
+func (m MultiParamMatcher) Length() int {
+	return len(m.values)
+}
+
+// Flags return value of ParamMatcher.
+func (m MultiParamMatcher) Flags() map[string]bool {
+	return m.flags
+}
+
+// ToMultiParamMatcher converts ParamMatcherInterface to MultiParamMatcherInterface with 1 value only
+func ToMultiParamMatcher(single ParamMatcherInterface) MultiParamMatcherInterface {
+	return MultiParamMatcher{
+		strategy: single.Strategy(),
+		values: []ParamMatcher{{
+			strategy: single.Strategy(),
+			value:    single.Value(),
+			flags:    single.Flags(),
+		}},
+		flags: single.Flags(),
+	}
+}
+
+// Including returns MultiParamMatcher with ParamIncludes matching strategy
+func Including(values ...ParamMatcher) MultiParamMatcher {
+	return MultiParamMatcher{
+		strategy: ParamIncludes,
+		values:   values,
+	}
+}
+
+// HavingExactly returns MultiParamMatcher with ParamHasExactly matching strategy
+func HavingExactly(values ...ParamMatcher) MultiParamMatcher {
+	return MultiParamMatcher{
+		strategy: ParamHasExactly,
+		values:   values,
 	}
 }

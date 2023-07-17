@@ -25,6 +25,12 @@ func TestStubRule_ToJson(t *testing.T) {
 		WithQueryParam("firstName", EqualTo("Jhon")).
 		WithQueryParam("lastName", NotMatching("Black")).
 		WithQueryParam("nickname", EqualToIgnoreCase("jhonBlack")).
+		WithQueryParams("id", HavingExactly(
+			EqualTo("1"), Contains("2"),
+		)).
+		WithQueryParams("model", Including(
+			Contains("A1"), EqualTo("A2"),
+		)).
 		WithBodyPattern(EqualToJson(`{"meta": "information"}`, IgnoreArrayOrder, IgnoreExtraElements)).
 		WithBodyPattern(Contains("information")).
 		WithMultipartPattern(
@@ -38,6 +44,7 @@ func TestStubRule_ToJson(t *testing.T) {
 		WithCookie("absentcookie", Absent()).
 		WithHeader("x-session", Matching("^\\S+@\\S+$")).
 		WithCookie("session", EqualToXml("<xml>")).
+		WithHeaders("x-multiple", Including(Contains("H1"), Contains("H2"))).
 		WillReturn(
 			`{"code": 400, "detail": "detail"}`,
 			map[string]string{"Content-Type": "application/json"},

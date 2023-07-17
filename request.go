@@ -8,8 +8,8 @@ import (
 type Request struct {
 	urlMatcher           URLMatcherInterface
 	method               string
-	headers              map[string]ParamMatcherInterface
-	queryParams          map[string]ParamMatcherInterface
+	headers              map[string]MultiParamMatcherInterface
+	queryParams          map[string]MultiParamMatcherInterface
 	cookies              map[string]ParamMatcherInterface
 	bodyPatterns         []ParamMatcher
 	multipartPatterns    []*MultipartPattern
@@ -66,7 +66,17 @@ func (r *Request) WithBasicAuth(username, password string) *Request {
 // WithQueryParam add param to query param list
 func (r *Request) WithQueryParam(param string, matcher ParamMatcherInterface) *Request {
 	if r.queryParams == nil {
-		r.queryParams = map[string]ParamMatcherInterface{}
+		r.queryParams = map[string]MultiParamMatcherInterface{}
+	}
+
+	r.queryParams[param] = ToMultiParamMatcher(matcher)
+	return r
+}
+
+// WithQueryParams add param to query param list
+func (r *Request) WithQueryParams(param string, matcher MultiParamMatcherInterface) *Request {
+	if r.queryParams == nil {
+		r.queryParams = map[string]MultiParamMatcherInterface{}
 	}
 
 	r.queryParams[param] = matcher
@@ -76,7 +86,17 @@ func (r *Request) WithQueryParam(param string, matcher ParamMatcherInterface) *R
 // WithHeader add header to header list
 func (r *Request) WithHeader(header string, matcher ParamMatcherInterface) *Request {
 	if r.headers == nil {
-		r.headers = map[string]ParamMatcherInterface{}
+		r.headers = map[string]MultiParamMatcherInterface{}
+	}
+
+	r.headers[header] = ToMultiParamMatcher(matcher)
+	return r
+}
+
+// WithHeaders add header to header list
+func (r *Request) WithHeaders(header string, matcher MultiParamMatcherInterface) *Request {
+	if r.headers == nil {
+		r.headers = map[string]MultiParamMatcherInterface{}
 	}
 
 	r.headers[header] = matcher
@@ -118,8 +138,22 @@ func (r *Request) MarshalJSON() ([]byte, error) {
 	if len(r.headers) > 0 {
 		headers := make(map[string]map[string]interface{}, len(r.headers))
 		for key, header := range r.headers {
-			headers[key] = map[string]interface{}{
-				string(header.Strategy()): header.Value(),
+			if header.IsSingleParam() {
+				headers[key] = map[string]interface{}{
+					string(header.Strategy()): header.FirstValue(),
+				}
+			} else {
+				headers[key] = map[string]interface{}{
+					string(header.Strategy()): make([]interface{}, 0, header.Length()),
+				}
+
+				subKey := headers[key][string(header.Strategy())].([]interface{})
+				for _, v := range header.Values() {
+					subKey = append(subKey, map[string]string{
+						string(v.Strategy()): v.Value(),
+					})
+				}
+				headers[key][string(header.Strategy())] = subKey
 			}
 
 			for flag, value := range header.Flags() {
@@ -144,8 +178,22 @@ func (r *Request) MarshalJSON() ([]byte, error) {
 	if len(r.queryParams) > 0 {
 		params := make(map[string]map[string]interface{}, len(r.queryParams))
 		for key, param := range r.queryParams {
-			params[key] = map[string]interface{}{
-				string(param.Strategy()): param.Value(),
+			if param.IsSingleParam() {
+				params[key] = map[string]interface{}{
+					string(param.Strategy()): param.FirstValue(),
+				}
+			} else {
+				params[key] = map[string]interface{}{
+					string(param.Strategy()): make([]map[string]string, 0, param.Length()),
+				}
+
+				subKey := params[key][string(param.Strategy())].([]map[string]string)
+				for _, v := range param.Values() {
+					subKey = append(subKey, map[string]string{
+						string(v.Strategy()): v.Value(),
+					})
+				}
+				params[key][string(param.Strategy())] = subKey
 			}
 
 			for flag, value := range param.Flags() {

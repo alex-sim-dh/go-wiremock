@@ -18,6 +18,16 @@ type ParamMatcherInterface interface {
 	Flags() map[string]bool
 }
 
+// MultiParamMatcherInterface is pair ParamMatchingStrategy and string matched value
+type MultiParamMatcherInterface interface {
+	Strategy() ParamMatchingStrategy
+	IsSingleParam() bool
+	FirstValue() string
+	Length() int
+	Values() []ParamMatcher
+	Flags() map[string]bool
+}
+
 // URLMatcherInterface is pair URLMatchingStrategy and string matched value
 type URLMatcherInterface interface {
 	Strategy() URLMatchingStrategy
@@ -68,9 +78,21 @@ func (s *StubRule) WithQueryParam(param string, matcher ParamMatcherInterface) *
 	return s
 }
 
+// WithQueryParams adds query param and returns *StubRule
+func (s *StubRule) WithQueryParams(param string, matcher MultiParamMatcherInterface) *StubRule {
+	s.request.WithQueryParams(param, matcher)
+	return s
+}
+
 // WithHeader adds header to Headers and returns *StubRule
 func (s *StubRule) WithHeader(header string, matcher ParamMatcherInterface) *StubRule {
 	s.request.WithHeader(header, matcher)
+	return s
+}
+
+// WithHeaders adds header to Headers and returns *StubRule
+func (s *StubRule) WithHeaders(header string, matcher MultiParamMatcherInterface) *StubRule {
+	s.request.WithHeaders(header, matcher)
 	return s
 }
 

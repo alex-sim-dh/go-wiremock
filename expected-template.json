@@ -54,6 +54,16 @@
       },
       "x-absent": {
         "absent": true
+      },
+      "x-multiple": {
+        "includes": [
+          {
+            "contains": "H1"
+          },
+          {
+            "contains": "H2"
+          }
+        ]
       }
     },
     "queryParameters": {
@@ -66,6 +76,26 @@
       "nickname": {
         "equalTo": "jhonBlack",
         "caseInsensitive": true
+      },
+      "id": {
+        "hasExactly": [
+          {
+            "equalTo": "1"
+          },
+          {
+            "contains": "2"
+          }
+        ]
+      },
+      "model": {
+        "includes": [
+          {
+            "contains": "A1"
+          },
+          {
+            "equalTo": "A2"
+          }
+        ]
       }
     },
     "urlPath": "/example"
